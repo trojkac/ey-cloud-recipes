@@ -188,3 +188,5 @@
 #include_recipe "clamav"
 
 include_recipe "update_pt_version"
+include_recipe "replication_consistency_check"
+

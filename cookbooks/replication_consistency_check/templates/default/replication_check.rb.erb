@@ -1,0 +1,34 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'json'
+
+# Usage Notes
+# * after adding a slave you must perform a deploy so the slave is part of the dna.json file
+
+app_path='/data/<%=@app%>/current/'
+exit if not File.exists?('/etc/chef/dna.json')
+
+
+# retrieve password from .mytop file
+def get_password
+  %x{sudo cat /root/.mytop |grep pass |awk -F= '{print $2}'}.chomp
+end
+
+# retrieve config from dna.json file
+def config_file
+  %x{sudo cat /etc/chef/dna.json}
+end
+
+chef_config = JSON.parse config_file
+
+unless chef_config['db_slaves'].empty? or chef_config['db_slaves'].nil?
+  result = %x{pt-table-checksum --no-check-binlog-format -u root -p #{get_password} -h  #{chef_config['db_host']}}
+  Dir.chdir app_path
+  if $?.exitstatus != 0
+    %x{bundle exec rake rollbar:log['error','Database replication error: #{result}'] RAILS_ENV=$RAILS_ENV}
+  else
+    %x{bundle exec rake rollbar:log['info','Performed replication check. Everything is fine'] RAILS_ENV=$RAILS_ENV}
+  end
+end
+
