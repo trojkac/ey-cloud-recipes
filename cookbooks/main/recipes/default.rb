@@ -189,4 +189,4 @@
 
 include_recipe "update_pt_version"
 include_recipe "replication_consistency_check"
-
+include_recipe "delayed_job"
